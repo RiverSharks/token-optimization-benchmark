@@ -1,0 +1,17 @@
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y \
+    curl git ffmpeg libsm6 libxext6 libwebp-dev build-essential \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && useradd -m -u 1000 appuser
+
+RUN npm install -g @anthropic-ai/claude-code
+
+RUN pip install python-telegram-bot opencv-python Pillow pytest responses
+
+RUN mkdir -p /workspace && chown appuser:appuser /workspace
+USER appuser
+WORKDIR /workspace
+RUN git clone https://github.com/nlef/moonraker-telegram-bot.git . \
+    && git checkout development

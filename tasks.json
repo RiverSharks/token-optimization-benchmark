@@ -1,0 +1,16 @@
+[
+  {
+    "id": "task_001",
+    "type": "feature_impl",
+    "commit_hash": "fc7f4db9b87eb35ee65a9b45b3d534adee2fd1c5",
+    "prompt": "Add humidity display support for SHT3X and similar sensors. The 'humidity' key should be included. When formatting sensor status messages, if the sensor value contains a 'humidity' field, append a line showing the humidity percentage (rounded, with a droplet emoji). Also fix the sensor name formatting so that: 'sht3x' → 'Sht3X', 'SHT3X' → 'Sht3X', 'bme280' → 'Bme280', 'heater_bed' → 'Heater Bed', 'heaterBed' → 'Heater Bed', 'extruder' → 'Extruder'.",
+    "harness_verify_script": "hidden_tests/verify_task_001.py"
+  },
+  {
+    "id": "task_005",
+    "commit_hash": "HEAD",
+    "type": "feature_impl",
+    "prompt": "Add accelerometer support to display motion detection and vibration data from sensors like ADXL345 and LIS2DW12. Track accel_x, accel_y, accel_z parameters in _SENSOR_PARAMS. Modify the _sensor_message method: For accelerometer sensors (when all three accel_x, accel_y, accel_z are present): 1) Calculate magnitude = sqrt(x² + y² + z²). 2) Format and display the magnitude with units: 'SensorName: X.XX m/s²' (e.g., 'Lis2dw12: ~10.31 m/s²'). Test outputs: (0.02, 0.01, 9.81)→'Adxl345: ~9.81 m/s²', (1.5, 2.0, 10.0)→'Lis2dw12: ~10.31 m/s²', (3.5, 3.0, 11.5)→'Accelerometer: ~12.39 m/s²'. Sensor name formatting: capitalize first letter, rest lowercase. This accelerometer logic must be checked before temperature logic in the if-elif chain.",
+    "harness_verify_script": "hidden_tests/verify_task_005.py"
+  }
+]
