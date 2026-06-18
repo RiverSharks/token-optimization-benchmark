@@ -1,0 +1,5 @@
+FROM agent-benchmark-base
+
+USER root
+RUN pip install symdex[local]
+USER appuser
