@@ -14,6 +14,9 @@ python evaluate.py --tasks task_001 --tools baseline symdex
 
 # Custom results file and model
 python evaluate.py --results results/my_run.csv --model claude-opus-4-5-20251001
+
+# Re-print the summary table for an existing results CSV
+python evaluate.py --results results/my_run.csv --summary-only
 """
 from __future__ import annotations
 
@@ -25,6 +28,7 @@ import sys
 
 from dotenv import load_dotenv
 
+from benchmark.analysis import print_summary
 from benchmark.config import RunConfig, TaskResult, load_tasks
 from benchmark.docker_runner import DockerRunner
 from benchmark.metrics import parse_token_metrics
@@ -94,9 +98,11 @@ def run_matrix(config: RunConfig, tasks_path: str = "tasks.json") -> None:
                 passed_bool, verify_output = run_verification(task.harness_verify_script)
                 passed = 1 if passed_bool else 0
 
-                if tool == "symdex":
-                    mcp_passed, mcp_output = run_verification("hidden_tests/verify_mcp_usage.py")
-                    log.info("MCP usage check — passed=%d output=%s", int(mcp_passed), mcp_output)
+                mcp_passed = None
+                if tool in ("symdex", "serena", "probe"):
+                    mcp_ok, mcp_output = run_verification("hidden_tests/verify_mcp_usage.py")
+                    mcp_passed = 1 if mcp_ok else 0
+                    log.info("MCP usage check — passed=%d output=%s", mcp_passed, mcp_output)
 
                 log.info(
                     "RESULT %s — in_tok=%d out_tok=%d cache_hits=%d passed=%d",
@@ -111,10 +117,13 @@ def run_matrix(config: RunConfig, tasks_path: str = "tasks.json") -> None:
                     out_tok=out_tok,
                     cache_hits=c_hit,
                     passed=passed,
+                    duration_s=runner.duration_s,
+                    mcp_passed=mcp_passed,
                 ))
 
     log.info("All runs completed. Results: %s", config.results_file)
     print(f"All runs completed. Results: {config.results_file}")
+    print_summary(config.results_file)
 
 
 def parse_args() -> argparse.Namespace:
@@ -127,7 +136,8 @@ def parse_args() -> argparse.Namespace:
         help="Number of trials per task/tool combination.",
     )
     parser.add_argument(
-        "--tools", nargs="+", default=["baseline", "symdex", "caveman"],
+        "--tools", nargs="+",
+        default=["baseline", "symdex", "caveman", "serena", "repomix", "probe"],
         metavar="TOOL",
         help="Which tool variants to run.",
     )
@@ -147,6 +157,10 @@ def parse_args() -> argparse.Namespace:
         help="Anthropic model name passed to the container.",
     )
     parser.add_argument(
+        "--summary-only", action="store_true",
+        help="Skip the runs and just print the summary table for --results.",
+    )
+    parser.add_argument(
         "--tasks-file", default="tasks.json",
         metavar="PATH",
         help="Path to the tasks JSON file.",
@@ -160,6 +174,10 @@ def main() -> None:
     log.info("Logger initialised")
 
     args = parse_args()
+
+    if args.summary_only:
+        print_summary(args.results)
+        return
 
     if "ANTHROPIC_API_KEY" not in os.environ:
         log.error("ANTHROPIC_API_KEY is not set. Add it to your .env or export it.")

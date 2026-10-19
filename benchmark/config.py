@@ -17,11 +17,16 @@ class Task:
 @dataclass
 class RunConfig:
     num_trials: int = 1
-    tools: list[str] = field(default_factory=lambda: ["baseline", "symdex", "caveman"])
+    tools: list[str] = field(default_factory=lambda: [
+        "baseline", "symdex", "caveman", "serena", "repomix", "probe",
+    ])
     images: dict[str, str] = field(default_factory=lambda: {
         "baseline": "agent-benchmark-base",
         "symdex":   "agent-benchmark-symdex",
         "caveman":  "agent-benchmark-base",
+        "serena":   "agent-benchmark-base",
+        "repomix":  "agent-benchmark-repomix",
+        "probe":    "agent-benchmark-probe",
     })
     results_file: str = "results/benchmark_results.csv"
     model_name: str = "claude-haiku-4-5-20251001"
@@ -37,6 +42,8 @@ class TaskResult:
     out_tok: int
     cache_hits: int
     passed: int  # 1 or 0
+    duration_s: float = 0.0
+    mcp_passed: Optional[int] = None  # None when the tool uses no MCP server
     error: Optional[str] = None
 
 

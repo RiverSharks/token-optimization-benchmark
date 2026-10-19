@@ -1,0 +1,8 @@
+FROM agent-benchmark-base
+
+USER root
+RUN pip install uv
+USER appuser
+
+# Warm the uv cache so the benchmark run itself does not pay the download cost.
+RUN uvx --from git+https://github.com/oraios/serena serena --help >/dev/null 2>&1 || true

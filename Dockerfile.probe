@@ -1,0 +1,5 @@
+FROM agent-benchmark-base
+
+USER root
+RUN npm install -g @buger/probe @buger/probe-mcp
+USER appuser

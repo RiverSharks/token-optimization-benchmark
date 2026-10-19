@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
+import time
 from pathlib import Path
 
 log = logging.getLogger("benchmark")
@@ -26,6 +27,7 @@ class DockerRunner:
         self.commit_hash = commit_hash
         self.prompt = prompt
         self.model_name = model_name
+        self.duration_s = 0.0
 
     def __enter__(self) -> "DockerRunner":
         # Remove any leftover container with this name.
@@ -34,6 +36,7 @@ class DockerRunner:
             capture_output=True,
         )
         log.debug("Pre-run rm of %s (if existed)", self.container)
+        self._started = time.time()
         return self
 
     def __exit__(self, *_) -> None:
@@ -57,6 +60,8 @@ class DockerRunner:
         ]
         log.debug("docker run args: %s", args)
         proc = subprocess.run(args, capture_output=True, text=True)
+        self.duration_s = time.monotonic() - self._started
+        log.debug("container wall time: %.2fs", self.duration_s)
         log.debug("docker returncode: %d", proc.returncode)
         log.debug("docker stdout:\n%s", proc.stdout)
         if proc.stderr:
