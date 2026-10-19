@@ -1,0 +1,5 @@
+FROM agent-benchmark-base
+
+USER root
+RUN npm install -g repomix
+USER appuser

@@ -8,6 +8,7 @@ from benchmark.config import TaskResult
 _HEADER = [
     "Task_ID", "Tool", "Trial",
     "Input_Tokens", "Output_Tokens", "Cache_Hits", "Verification_Passed",
+    "MCP_Passed", "Duration_S",
 ]
 
 
@@ -30,4 +31,6 @@ class ResultsWriter:
                 result.out_tok,
                 result.cache_hits,
                 result.passed,
+                round(result.duration_s, 2),
+                "" if result.mcp_passed is None else result.mcp_passed,
             ])
