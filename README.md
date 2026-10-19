@@ -1,6 +1,6 @@
 # Token Optimization Benchmark
 
-A benchmarking suite that evaluates AI coding agent configurations for **token efficiency** and **task completion accuracy**. For now it compares three tool strategies — Baseline, SymDex, and Caveman — by running Claude Code against realistic software engineering tasks inside isolated Docker containers.
+A benchmarking suite that evaluates AI coding agent configurations for **token efficiency** and **task completion accuracy**. For now it compares four tool strategies — Baseline, SymDex, Caveman, and Serena — by running Claude Code against realistic software engineering tasks inside isolated Docker containers.
 
 ## Overview
 
@@ -13,6 +13,7 @@ The benchmark runs a matrix of `tasks × tools × trials`, collecting token usag
 | **Baseline** | Vanilla `claude` with no augmentation |
 | **SymDex** | Claude augmented with [SymDex](https://github.com/husnainpk/SymDex) — an MCP-based semantic code search tool that indexes the codebase before the task |
 | **Caveman** | Claude augmented with the [Caveman plugin](https://github.com/JuliusBrussee/caveman), which prepends `/caveman ultra` to the prompt for aggressive context gathering |
+| **Serena** | Claude augmented with [Serena](https://github.com/oraios/serena) — an LSP-backed semantic coding toolkit exposed over MCP (`find_symbol`, `get_symbols_overview`, `search_for_pattern`) |
 
 ### Metrics Collected
 
@@ -29,6 +30,7 @@ The benchmark runs a matrix of `tasks × tools × trials`, collecting token usag
 ├── requirements.txt         # Python dependencies
 ├── Dockerfile.base          # Docker image for baseline and caveman tools
 ├── Dockerfile.symdex        # Docker image for symdex (includes symdex + MCP server)
+├── Dockerfile.serena        # Docker image for serena (includes uv, warms the Serena cache)
 ├── benchmark/
 │   ├── config.py            # RunConfig, Task, TaskResult dataclasses
 │   ├── docker_runner.py     # Docker container lifecycle management
@@ -38,11 +40,12 @@ The benchmark runs a matrix of `tasks × tools × trials`, collecting token usag
 ├── hidden_tests/
 │   ├── verify_task_001.py   # Verification harness: humidity sensor feature
 │   ├── verify_task_005.py   # Verification harness: accelerometer sensor feature
-│   └── verify_mcp_usage.py  # Checks whether MCP tools were actually invoked
+│   └── verify_mcp_usage.py  # Checks whether MCP tools were actually invoked (takes a server prefix)
 ├── scripts/
 │   ├── baseline.sh          # Agent script: plain claude invocation
 │   ├── symdex.sh            # Agent script: index → serve → claude with MCP
-│   └── caveman.sh           # Agent script: install plugin → claude with /caveman ultra
+│   ├── caveman.sh           # Agent script: install plugin → claude with /caveman ultra
+│   └── serena.sh            # Agent script: start Serena MCP server → claude with MCP
 └── results/                 # Output CSV files and debug logs
 ```
 
@@ -74,6 +77,7 @@ pip install -r requirements.txt
 # Build Docker images
 docker build -f Dockerfile.base   -t agent-benchmark-base   .
 docker build -f Dockerfile.symdex -t agent-benchmark-symdex .
+docker build -f Dockerfile.serena -t agent-benchmark-serena .
 ```
 
 > The `caveman` tool reuses the `agent-benchmark-base` image and installs the plugin at runtime.
@@ -90,6 +94,9 @@ python evaluate.py --trials 5
 # Run only the baseline tool
 python evaluate.py --tools baseline
 
+# Compare the two MCP-based code-search tools
+python evaluate.py --tools symdex serena
+
 # Run specific tasks against two tools
 python evaluate.py --tasks task_001 --tools baseline symdex
 
@@ -102,7 +109,7 @@ python evaluate.py --results results/my_run.csv --model claude-opus-4-5-20251001
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--trials N` | `1` | Number of trials per task/tool combination |
-| `--tools` | `baseline symdex caveman` | Which tools to benchmark |
+| `--tools` | `baseline symdex caveman serena` | Which tools to benchmark |
 | `--tasks` | all | Task IDs to run (e.g. `task_001 task_005`) |
 | `--results` | `results/benchmark_results.csv` | Output CSV path |
 | `--model` | `claude-haiku-4-5-20251001` | Claude model to use |
@@ -114,7 +121,7 @@ Results are appended to a CSV file with the following columns:
 | Column | Description |
 |--------|-------------|
 | `Task_ID` | e.g. `task_001` |
-| `Tool` | `baseline`, `symdex`, or `caveman` |
+| `Tool` | `baseline`, `symdex`, `caveman`, or `serena` |
 | `Trial` | Trial number |
 | `Input_Tokens` | Prompt + context tokens consumed |
 | `Output_Tokens` | Tokens generated |
@@ -141,6 +148,7 @@ For each `task × tool × trial` combination:
    - Checks out the target git commit
    - (SymDex only) Indexes the codebase and starts the MCP server
    - (Caveman only) Installs the Caveman plugin
+   - (Serena only) Starts the Serena MCP server and registers it with `claude mcp add`
    - Runs `claude -p '<prompt>' --output-format json --dangerously-skip-permissions`
 3. Token metrics are parsed from Claude's JSON output
 4. The modified workspace is copied out of the container

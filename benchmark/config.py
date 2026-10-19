@@ -17,11 +17,12 @@ class Task:
 @dataclass
 class RunConfig:
     num_trials: int = 1
-    tools: list[str] = field(default_factory=lambda: ["baseline", "symdex", "caveman"])
+    tools: list[str] = field(default_factory=lambda: ["baseline", "symdex", "caveman", "serena"])
     images: dict[str, str] = field(default_factory=lambda: {
         "baseline": "agent-benchmark-base",
         "symdex":   "agent-benchmark-symdex",
         "caveman":  "agent-benchmark-base",
+        "serena":   "agent-benchmark-base",
     })
     results_file: str = "results/benchmark_results.csv"
     model_name: str = "claude-haiku-4-5-20251001"

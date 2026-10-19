@@ -94,7 +94,7 @@ def run_matrix(config: RunConfig, tasks_path: str = "tasks.json") -> None:
                 passed_bool, verify_output = run_verification(task.harness_verify_script)
                 passed = 1 if passed_bool else 0
 
-                if tool == "symdex":
+                if tool in ("symdex", "serena"):
                     mcp_passed, mcp_output = run_verification("hidden_tests/verify_mcp_usage.py")
                     log.info("MCP usage check — passed=%d output=%s", int(mcp_passed), mcp_output)
 
@@ -127,7 +127,7 @@ def parse_args() -> argparse.Namespace:
         help="Number of trials per task/tool combination.",
     )
     parser.add_argument(
-        "--tools", nargs="+", default=["baseline", "symdex", "caveman"],
+        "--tools", nargs="+", default=["baseline", "symdex", "caveman", "serena"],
         metavar="TOOL",
         help="Which tool variants to run.",
     )
